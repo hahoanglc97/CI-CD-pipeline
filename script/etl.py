@@ -8,8 +8,8 @@ def extract_data():
     conn = psycopg2.connect(
         database="data_engineering",
         user="postgres",
-        password="password",
-        host="localhost",
+        password="admin",
+        host="10.20.0.10",
         port="5432",
     )
     cursor = conn.cursor()
@@ -52,7 +52,7 @@ def load_data(transformed):
             writer.writerow(row)
 
     minio_client = Minio(
-        "localhost:9000", access_key="admin", secret_key="password", secure=False
+        "10.20.0.20:9000", access_key="admin", secret_key="password", secure=False
     )
     minio_client.fput_object("data-lake-ci-cd-test", filename, filename)
 
