@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                // Clone the repository
+                git branch: 'main', credentialsId: 'github-credentials', url: 'https://github.com/hahoanglc97/CI-CD-pipeline.git'
+            }
+        }
+        stage('Install Dependencies'){
+            steps {
+                // Install Python dependencies
+                script {
+                    docker.image('python:3.8').inside {
+                        sh '''
+                            python3 -m venv venv
+                            . venv/bin/activate
+                            pip install -r script/requirements.txt
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                // Run unit tests
+                script {
+                    docker.image('python:3.8').inside('-itd --network=ci-cd-pipeline_postgres') {
+                        sh '''
+                            . venv/bin/activate
+                            python3 -m unittest discover -s script
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Run ETL') {
+            steps {
+                // Run the ETL process
+                script {
+                    docker.image('python:3.8').inside('-itd --network=ci-cd-pipeline_postgres') {
+                        sh '''
+                            . venv/bin/activate
+                            python script/etl.py
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Archive the generated CSV files
+            archiveArtifacts artifacts: '**/*.csv', allowEmptyArchive: true
+        }
+    }
+}
